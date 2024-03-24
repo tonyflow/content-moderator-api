@@ -5,6 +5,9 @@ WORKDIR /usr/niko/content-moderator
 COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
+# Place your hugging face API token here
+ENV BEARER_TOKEN=bearer_token_placeholder
+
 COPY . .
 EXPOSE 8000
 
