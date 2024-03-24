@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response, status
 from metrics import method_counter, MetricsCollector, Reporter, ReporterFactory
-from classifier import Classifier, ClassifierFactory
+from classifier import Classifier, ClassifierFactory, ContentModeratorResponseData
+from typing import *
 
 import os
 import yaml
@@ -33,11 +34,15 @@ def root():
 
 @content_moderator.get("/healthcheck")
 @method_counter
-def healthcheck():
+def healthcheck(status_code=200):
     return 200
 
 
-@content_moderator.get("/classify")
+@content_moderator.get("/classify", status_code=200)
 @method_counter
-def classify(message: str):
-    return classifier.classify(message)
+def classify(message: str, response: Response) -> list[list[ContentModeratorResponseData]]:
+    classification: List[List[ContentModeratorResponseData]] = classifier.classify(message)
+    if not classification:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+
+    return classification

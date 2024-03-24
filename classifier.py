@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import *
 import requests
+from pydantic import BaseModel
 
 
-class ContentModeratorResponseData:
-    def __init__(self, label: str, score: float):
-        self.label = label
-        self.score = score
+class ContentModeratorResponseData(BaseModel):
+    label: str
+    score: float
 
 
 class Classifier(ABC):
@@ -64,9 +64,14 @@ class KoalaClassifier(Classifier):
         e.g. hate, violence etc.
         """
 
-        return self._query_http_endpoint({
+        response_json = self._query_http_endpoint({
             "inputs": message,
         })
+
+        if 'error' in response_json:
+            return []
+
+        return response_json
 
     def _validate_config_args(self, **kwargs):
         if not kwargs:
