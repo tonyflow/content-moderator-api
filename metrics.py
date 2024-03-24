@@ -1,7 +1,9 @@
+import threading
 from abc import ABC, abstractmethod
 from functools import wraps
 from threading import Thread
 from typing import *
+import logging
 
 import schedule
 
@@ -41,24 +43,33 @@ class StdOutMetricsReporter(Reporter):
          Once the metrics are persisted we can start tracking metrics for the new reporting interval.
          That is why we are truncating the metrics map upon successful reporting
         """
-        print(f'Printing all metrics collected so far {metrics}')
+        logging.info(f'Printing all metrics collected so far {metrics}')
 
         metrics.clear()
 
 
 class FileMetricsReporter(Reporter):
+    """
+    Demo class
+    """
+
     def report(self, metrics: ThreadSafeDict[str, int]):
         pass
 
 
 class InfluxMetricsReporter(Reporter):
+    """
+    Demo class
+    """
+
     def report(self, metrics: ThreadSafeDict[str, int]):
         pass
 
 
 class ReporterFactory:
     """
-    Implemented just the sake of abstraction
+    Helper class for creating the reporters used from the metrics collector.
+    Implemented just the sake of abstraction.
     """
 
     @staticmethod
@@ -91,17 +102,31 @@ class MetricsCollector:
         self.reporter = reporter
 
     def start(self):
-        print(f'Starting metric collection and reporting...')
+        """
+        Starts the metrics collector thread before starting the FastAPI endpoints
+        """
+        logging.info(f'Starting metric collection and reporting...')
         MetricsCollector.scheduler_thread.start()
 
     def kill(self):
-        if self.scheduler_thread:
+        """
+        Kills the metrics collector thread by first flushing any metrics what have not been reported
+        """
+        if MetricsCollector.scheduler_thread:
+            logging.info(f'Stopping metrics thread {threading.current_thread().ident} ...')
+            self.collect_and_report()
             MetricsCollector.scheduler_thread.join(timeout=2)
 
     def collect(self) -> ThreadSafeDict[str, int]:
+        """
+        Collect all available metrics upon the point of invocation. The method facilitates testing the class.
+        """
         return MetricsCollector.method_counts
 
     def collect_and_report(self):
+        """
+        Collect and report all available metrics upon the point of invocation
+        """
         self.reporter.report(self.collect())
 
 

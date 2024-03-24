@@ -2,6 +2,7 @@
 ## Introduction and problem statement
 The application at hand provides a REST endpoint allowing the user to
 classify different text sentences. You can find the OpenAPI documentation for the endpoint under http://localhost:8000/docs
+The classification is based on the [KoalaAI Text Moderation model](https://huggingface.co/KoalaAI/Text-Moderation) provided by [huggingface.co](https://huggingface.co/).
 
 Apart from classifying the given text sentences, the API runs a metrics collector on a 
 separate thread. The metrics collector will collect and report the metrics included in the statically defined dict `method_names`
@@ -65,7 +66,7 @@ different endpoints.
 Rolling this out into production might first involve multiple deployments - namely staging, dev, canary and finally production - 
 all these environments should be appropriately configured. Whether manually using a cloud console or via
 an infrastructure-as-code language (e.g. Terraform). I would be an advocate of the second since it's much 
-more declarative and is under version control - thus in case of erroneous deployment, we can rollback.
+more declarative and is under version control - thus in case of erroneous deployment, we can roll back.
 
 ### CI/CD
 The CI/CD pipelines we're using should be updated to include the new service.
@@ -90,7 +91,8 @@ Some error model cases that need to be accounted for:
 - errors produced from the classifier HTTP query
 - error produced from marshalling/unmarshalling JSON responses
 - factory class errors
-- 
+- errors producing from capping input test
+- other ...
 
 ### Authentication and authorization
 If this API is for internal use only then locating it inside private VPC would be enough. Otherwise, we need 
@@ -98,10 +100,13 @@ to decide on an encryption scheme (symmetric, asymmetric) and different ways of 
 API (auth0 etc...)
 
 
-### Non-functional requirement
-1. Legal requirements:
-2. Product requirements:
-3. Logging:
+### Legal & compliance
+This has to be discussed with product/business/legal teams. if there are any considerations we need to take into account.
+
+### Performance
+This goes hand in hand with the next section. We need to have a ballpark estimation about the expected traffic.
+Since it's an MVP this could be low but we still need to have some numbers from product.
+
 
 ### Scaling topics
 The easiest way to scale this out would be to deploy the container build from the `Dockerfile` to a cloud container
@@ -115,12 +120,12 @@ service algorithmically.
 2. The rhythm of requests accommodation from the side of the serverless Koala API deployment provided by hugging face: No 
 matter how we optimize the service of receiving requests, the service will always be bound to how quickly the text is propagated
 to the Koala API for classification. This can be improved by :
-- using on demand on premise instances where we deploy the model ourselves
-- caching certain sentences and returning cached classifications: This can be done by computing the Levenshtein/edit distance 
+   - using on demand on premise instances where we deploy the model ourselves
+   - caching certain sentences and returning cached classifications: This can be done by computing the Levenshtein/edit distance 
 between incoming and cached requests and returning cached classifications if the distance is lower than an acceptable threshold
 
 ### Testing
-Currently the application is under tested
+Currently, the application is under tested
 
 #### Integration tests
 There's only one integration test included under `router_test.py` but because of the hugging face API warm up period. The test
@@ -129,18 +134,18 @@ be added.
 
 #### Unit tests
 Happy paths are tests but not all error paths. Especially once the error model becomes more sophisticated, the unit tests
-should be extended as well
+should be extended as well.
+
+Some quality unit tests should also be included e.g.
+- ***I had a very bad data*** should have high values on certain labels
+- ***This is a beautiful day*** should have high values on other labels
 
 ### Incremental Rollout
 This is only in case we already have a classification system and we want to gradually migrate to a new one. In that case,
 we can gradually move traffic from one classification service to the other. This divide can performed on the side of the 
-consumer (e.g. 20% of the requests are sent to service X and the rest to service Y) 
+consumer (e.g. 20% of the requests are sent to service X and the rest to service Y)
 
-## Tech spec sign off 
-The tech spec containing the detailed solution design should be signed off by the corresponding team and
-kept for historicity purposes.
-
-## Rollback
+### Rollback
 Once a rollout plan is drafted, we should be able to easily rollback each and every step of the process in case of failure.
 We can simplify this process by creating small deployable units. For example, the classification and the metrics collection
 can be two different phases of the deployment
@@ -148,7 +153,21 @@ can be two different phases of the deployment
 2. Deploy a full-fledged metrics reporter like something that reported metrics to a time-series database like Influx
 
 ### Interfaces with other components
+
 ### Caching
-#### HTTP compression
+In case of "similar" input we could leverage an in memory cache in order to save the hop to the remote API. For the MVP though
+cache optimization might not crucial.
+
+### HTTP compression
+At this point the API does not cap the input text. Theoretically, the user can sent an arbitrarily long "sentence" to classify.
+First of all in order to avoid that, we can cap this - as mentioned on the error model as well - but still even if we cap it 
+to 300 words, this would be significant network load and could
+
+### Code Review
+At least one more engineer should review and approve the involved code before this being rolled out to production.
+
+### Tech spec sign off 
+The tech spec containing the detailed solution design should be signed off by the corresponding team and
+kept for historicity purposes.
 
 

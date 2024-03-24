@@ -24,7 +24,7 @@ class KoalaClassifierTest(unittest.TestCase):
             url='dummy url',
             bearer_token='foo')
 
-        classification_response: List[List[ContentModeratorResponseData]] = koala_classifier.classify(
+        classification_response: List[List[KoalaTextModerationLabel]] = koala_classifier.classify(
             "This is test message")
 
         self.assertEqual(self.mock_koala_response, classification_response)

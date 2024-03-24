@@ -1,8 +1,11 @@
 from typing import *
 from threading import Lock
 
+K = TypeVar('K')
+V = TypeVar('V')
 
-class ThreadSafeDict[K, V]:
+
+class ThreadSafeDict(Generic[K, V]):
     """
     Provides a tread safe implementation for a dictionary.
     This is useful when multiple threads are updating different

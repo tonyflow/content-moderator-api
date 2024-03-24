@@ -1,24 +1,34 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import *
-import requests
+
 from pydantic import BaseModel
 
+from helpers import *
 
-class ContentModeratorResponseData(BaseModel):
+
+class KoalaTextModerationLabel(BaseModel):
+    """
+    Response model of the Koala AI Text Moderation API. More information about the labels
+    can be found here https://huggingface.co/KoalaAI/Text-Moderation
+    """
     label: str
     score: float
 
 
-class Classifier(ABC):
-    """
+R = TypeVar('R')
 
+
+class Classifier(ABC, Generic[R]):
+    """
+    Base class for all classifier models
     """
 
     @abstractmethod
-    def classify(self, message: str) -> List[List[ContentModeratorResponseData]]:
+    def classify(self, message: str) -> R:
         """
+        Run the core classification code. Either call an external API or access internal models
 
-        :param message:
+        :param message: Text to be classified. Warning: The length is currently unrestricted
         :return:
         """
         pass
@@ -27,6 +37,7 @@ class Classifier(ABC):
     def _validate_config_args(self, **kwargs):
         """
         Private method to check the config properties needed for a classifier
+
         :param kwargs: All keyword arguments provided from the caller
         :return: Void if all validations succeed
         :raises: Exception if one of the validation fails
@@ -34,15 +45,7 @@ class Classifier(ABC):
         pass
 
 
-'''
-{
-"error": "Model KoalaAI/Text-Moderation is currently loading",
-"estimated_time": 22.272043228149414
-}
-'''
-
-
-class KoalaClassifier(Classifier):
+class KoalaClassifier(Classifier[List[KoalaTextModerationLabel]]):
     """
     The KoalaClassifier is an implementation of the Classifier class which uses the KoalaAI text moderation
     model from hugging face. For a detailed description about the model and its capabilities please visit
@@ -54,7 +57,7 @@ class KoalaClassifier(Classifier):
         self.url: str = kwargs['url']
         self.bearer_token: Any = kwargs['bearer_token']
 
-    def classify(self, message: str) -> List[List[ContentModeratorResponseData]]:
+    def classify(self, message: str) -> List[KoalaTextModerationLabel]:
         """
         Contact the serverless endpoint provided my hugging face and provide
         a text classification
@@ -64,14 +67,15 @@ class KoalaClassifier(Classifier):
         e.g. hate, violence etc.
         """
 
-        response_json = self._query_http_endpoint({
+        response_json = query_http_endpoint(url=self.url, bearer_token=self.bearer_token, payload={
             "inputs": message,
         })
 
         if 'error' in response_json:
+            logging.error('Classifier is still in warm up phase...')
             return []
 
-        return response_json
+        return flatten_concatenation(response_json)
 
     def _validate_config_args(self, **kwargs):
         if not kwargs:
@@ -84,13 +88,12 @@ class KoalaClassifier(Classifier):
             raise Exception(
                 'Koala Classifier uses an OAuth authenticated API which needs a personal bearer token which was not provided')
 
-    def _query_http_endpoint(self, payload: Dict[str, Any]):
-        headers = {'Authorization': f'Bearer {self.bearer_token}'}
-        response = requests.post(self.url, headers=headers, json=payload)
-        return response.json()
-
 
 class ClassifierFactory:
+    """
+    Helper method for creating the classifier used from the moderator service
+    """
+
     @staticmethod
     def create(name: str = 'koala', **kwargs) -> Classifier:
         if kwargs:

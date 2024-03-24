@@ -1,10 +1,14 @@
 from fastapi import FastAPI, Response, status
 from metrics import method_counter, MetricsCollector, Reporter, ReporterFactory
-from classifier import Classifier, ClassifierFactory, ContentModeratorResponseData
+from classifier import Classifier, ClassifierFactory, KoalaTextModerationLabel
+from contextlib import asynccontextmanager
 from typing import *
+import logging
 
 import os
 import yaml
+
+logging.basicConfig(level=logging.INFO)
 
 
 def bootstrap() -> (Classifier, MetricsCollector):
@@ -22,9 +26,21 @@ def bootstrap() -> (Classifier, MetricsCollector):
         return classifier, metrics_collector
 
 
-content_moderator = FastAPI()
 classifier, metrics_collector = bootstrap()
 metrics_collector.start()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    This is required to clean up the metrics collector thread upon graceful shutdown.
+    """
+    yield
+    logging.info('Cleaning up...')
+    metrics_collector.kill()
+
+
+content_moderator = FastAPI(lifespan=lifespan)
 
 
 @content_moderator.get("/")
@@ -40,8 +56,8 @@ def healthcheck(status_code=200):
 
 @content_moderator.get("/classify", status_code=200)
 @method_counter
-def classify(message: str, response: Response) -> list[list[ContentModeratorResponseData]]:
-    classification: List[List[ContentModeratorResponseData]] = classifier.classify(message)
+def classify(message: str, response: Response) -> list[KoalaTextModerationLabel]:
+    classification: List[KoalaTextModerationLabel] = classifier.classify(message)
     if not classification:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
