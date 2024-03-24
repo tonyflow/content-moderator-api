@@ -1,0 +1,9 @@
+classifier:
+  name: koala
+  config:
+    url: https://api-inference.huggingface.co/models/KoalaAI/Text-Moderation
+
+metrics:
+  reporter: stdout
+  config:
+    reporting_interval_in_seconds: 4
