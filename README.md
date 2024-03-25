@@ -31,8 +31,8 @@ be more easily observed that way.
 The classifier and metrics configuration can be found in the `app_conf.yml`.
 
 ## Run the code
-The requests to the hugging face API need to be authenticated. This requires an access token which can be provided by 
-hugging face.
+The project uses Python 3.12. The requests to the hugging face API need to be authenticated. This requires an access token 
+which can be provided by hugging face.
 ### Manually
 1. Install all requirements
 ```bash
