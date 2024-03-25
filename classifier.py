@@ -72,7 +72,7 @@ class KoalaClassifier(Classifier[List[KoalaTextModerationLabel]]):
         })
 
         if 'error' in response_json:
-            logging.error('Classifier is still in warm up phase...')
+            logging.error(f'Classifier failed with {response_json}')
             return []
 
         return flatten_concatenation(response_json)
