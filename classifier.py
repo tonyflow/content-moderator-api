@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from helpers import *
 
 
-class KoalaTextModerationLabel(BaseModel):
+class TextModerationLabel(BaseModel):
     """
     Response model of the Koala AI Text Moderation API. More information about the labels
     can be found here https://huggingface.co/KoalaAI/Text-Moderation
@@ -45,7 +45,7 @@ class Classifier(ABC, Generic[R]):
         pass
 
 
-class KoalaClassifier(Classifier[List[KoalaTextModerationLabel]]):
+class KoalaClassifier(Classifier[List[TextModerationLabel]]):
     """
     The KoalaClassifier is an implementation of the Classifier class which uses the KoalaAI text moderation
     model from hugging face. For a detailed description about the model and its capabilities please visit
@@ -57,7 +57,7 @@ class KoalaClassifier(Classifier[List[KoalaTextModerationLabel]]):
         self.url: str = kwargs['url']
         self.bearer_token: Any = kwargs['bearer_token']
 
-    def classify(self, message: str) -> List[KoalaTextModerationLabel]:
+    def classify(self, message: str) -> List[TextModerationLabel]:
         """
         Contact the serverless endpoint provided my hugging face and provide
         a text classification

@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Response, status
 from metrics import method_counter, MetricsCollector, Reporter, ReporterFactory
-from classifier import Classifier, ClassifierFactory, KoalaTextModerationLabel
+from classifier import Classifier, ClassifierFactory, TextModerationLabel
 from contextlib import asynccontextmanager
 from typing import *
 import logging
@@ -13,6 +13,12 @@ logging.basicConfig(level=logging.INFO)
 
 
 def bootstrap() -> (Classifier, MetricsCollector):
+    """
+    Create the necessary services for the API to work. In this case the classifier and the
+    metrics collector need to be created. The app_conf.yml is read in order to create the instances
+    accordingly
+    :return: Classifier and metric collector instances
+    """
     with open('app_conf.yml') as config_file:
         config = yaml.safe_load(config_file)
         classifier: Classifier = ClassifierFactory.create(name=config['classifier']['name'],
@@ -57,8 +63,18 @@ def healthcheck(status_code=200):
 
 @content_moderator.post("/classify", status_code=200)
 @method_counter
-def classify(classification_request: ClassificationRequest, response: Response) -> list[KoalaTextModerationLabel]:
-    classification: List[KoalaTextModerationLabel] = classifier.classify(classification_request.text)
+def classify(classification_request: ClassificationRequest, response: Response) -> list[TextModerationLabel]:
+    """
+    Given text as input and the configured classifier, the endpoint will provide a list of text moderation labels
+    and their corresponding scores.
+
+    :param classification_request: Input request containing the text to be classified
+    :param response: The response object is needed to properly set the status codes in certain cases
+    :return: The response body including the different classifier labels
+    """
+    classification: List[TextModerationLabel] = classifier.classify(classification_request.text)
+
+    # During Koala serverless deployment warm-up period we return 503
     if not classification:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 

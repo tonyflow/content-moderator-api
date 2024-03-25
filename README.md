@@ -24,9 +24,9 @@ A few reasons why a POST was selected over a GET to convey these data
 Apart from classifying the given text sentences, the API runs a metrics collector on a separate thread. The metrics collector will collect 
 and report the metrics included in the statically defined dict `method_names` using the configured reporter.
 
-For the sake of demonstration, the metrics reporting interval is set to 4 seconds (so that the logs are not flooded with metric messages) and the
-metrics reporter is set to `stdout`. The functionality of the collector and the reporter can be more easily observed
-that way.
+For the sake of demonstration, the metrics reporting interval is set to 4 seconds instead of 1 (so that the logs are not flooded 
+with metric messages) and the metrics reporter is set to `stdout`. The functionality of the collector and the reporter can
+be more easily observed that way.
 
 The classifier and metrics configuration can be found in the `app_conf.yml`.
 
@@ -178,11 +178,16 @@ can be two different phases of the deployment
 
 ### Caching
 In case of "similar" input we could leverage an in-memory cache in order to save the hop to the remote API. Nevertheless,
-computing similarity upon every request can be expensive. All similarity measuring mechanisms (Levehnstein, Jaccard, Cosine)
+computing similarity upon every request can be expensive. All similarity measuring mechanisms (Levehnstein, Jaccard, cosine)
 would require the traversal of all the entries in cache plus the input. This means that we're talking about a linear
 runtime complexity. Based on this runtime, I would only adopt this solution as a fallback mechanism when the Koala API is down.
 
-For the MVP cache optimization might not be crucial. 
+Although we cannot be based on similarity, we can still check for identical input. An LRU (assuming temporal locality is 
+more important) cache containing a mapping from the text to their classification would do the trick. Cache should contain
+only input of certain length (no greater than `x`) in order to keep the size of keys and the cache itself to a minimum. We should
+make sure we track metrics on cache size, hits and misses so that we can adjust the size accordingly.
+
+For the MVP cache optimization is not crucial. 
 
 ### "Large" requests
 At this point the API does not cap the input text. Theoretically, the user can send an arbitrarily long text to classify.
