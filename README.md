@@ -69,7 +69,7 @@ Using either approaches you can access the API under http://localhost:8000/
 There were two candidates for building the API: FastAPI and Flask. The choice of FastAPI was more prominent since FastAPI:
 - Is highly customizable (more so than Flask)
 - Uses Pedantic that allows for out-of-the-box stricter typing
-- Has out-of-the-box support for async code execution. Flask does not 
+- Has out-of-the-box support for async code execution. 
 - Has automatic OpenAPI docs production
 - Despite it being relatively new, has extensive documentation and supportive community
 - Is proven to be faster than Flask
@@ -146,8 +146,7 @@ service algorithmically.
 matter how we optimize the service of receiving requests, the service will always be bound to how quickly the text is propagated
 to the Koala API for classification. This can be improved by :
    - using on-demand and regional(for proximity purposes) instances where we deploy the model ourselves
-   - caching certain sentences and returning cached classifications: This can be done by computing the Levenshtein/edit distance 
-between incoming and cached requests and returning cached classifications if the distance is lower than an acceptable threshold
+   - caching certain classification: to be discussed further on
 
 ### Testing
 Currently, the application is under tested
@@ -178,9 +177,12 @@ can be two different phases of the deployment
 2. Deploy a fully-fledged metrics reporter like something that reports metrics to a time-series database like Influx
 
 ### Caching
-In case of "similar" input we could leverage an in-memory cache in order to save the hop to the remote API. For the MVP though
-cache optimization might not crucial. Bloom filters can be used to make the decision of whether we can use the cache or not 
-faster by telling us what kind of data are definitely ***not*** in the cache.
+In case of "similar" input we could leverage an in-memory cache in order to save the hop to the remote API. Nevertheless,
+computing similarity upon every request can be expensive. All similarity measuring mechanisms (Levehnstein, Jaccard, Cosine)
+would require the traversal of all the entries in cache plus the input. This means that we're talking about a linear
+runtime complexity. Based on this runtime, I would only adopt this solution as a fallback mechanism when the Koala API is down.
+
+For the MVP cache optimization might not be crucial. 
 
 ### "Large" requests
 At this point the API does not cap the input text. Theoretically, the user can send an arbitrarily long text to classify.
@@ -197,11 +199,13 @@ This can easily be achieved with security groups or access lists.
 The attending engineer should make sure that these clients are updated appropriately and abide by the agreed contract.
 
 ### Code Review
-At least one more engineer should review and approve the involved code before this being rolled out to production. There
+At least one more engineer should review and approve the involved code before being rolled out to production. There
 are already some areas of improvement:
+- For now, the response produced from the Koala model is very granular, maybe we do not need such a fine-grained response, and we
+can aggregate these labels or keep the most significant ones. This can be achieved in collaboration with the ML engineers.
+- Rudimentary text cleaning e.g. removing special characters or redundant spaces
 - Rely on FastAPI decorators for bootstrapping and cleaning up the application
-- Constrain the length of messages that can be sent for classification. Longer messages could be accommodated by a different endpoint.
-The endpoint could be a POST request with a request body in that case.
+- Constrain the length of messages that can be sent for classification. Larger messages could be a chance for monetization.
 - Implement an actual metrics reporter. Currently, we are just printing the metrics to stdout. These metrics should be 
 persisted somewhere (e.g. time-series database) in order to be displayed and provide concrete insights
 
@@ -211,5 +215,5 @@ kept for historicity purposes.
 
 ### Post Rollout phase
 The attending engineer should monitor the rollout - check all the metrics, dashboards and alerts mentioned above - and make 
-sure that service is behaving as expected. This should happen at least during the day of the deployment. Dependent teams
+sure that the service is behaving as expected. This should happen at least during the day of the deployment. Dependent teams
 should be notified about the deployment as well as the abilities of the MVP.

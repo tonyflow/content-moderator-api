@@ -13,6 +13,6 @@ def test_router_classify():
                       {"label": "V", "score": 0.0028166065458208323}, {"label": "S", "score": 0.0022672933991998434},
                       {"label": "V2", "score": 0.001755744218826294}, {"label": "S3", "score": 0.0015976601280272007},
                       {"label": "H2", "score": 0.0010157079668715596}]]
-    response = client.get("/classify?message=I love all people")
+    response = client.post("/classify", json={"text": "I love all people"})
     assert response.status_code == 200
     assert response.json() == expected_json

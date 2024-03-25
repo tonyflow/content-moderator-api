@@ -127,7 +127,11 @@ class MetricsCollector:
         """
         Collect and report all available metrics upon the point of invocation
         """
-        self.reporter.report(self.collect())
+        try:
+            collected_metrics: ThreadSafeDict[str, int] = self.collect()
+            self.reporter.report(collected_metrics)
+        except Exception as e:
+            logging.error(f'Metrics could not be reported due to {e}')
 
 
 def method_counter(func: Callable[..., Any]) -> Callable[..., Any]:
