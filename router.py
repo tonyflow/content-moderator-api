@@ -4,6 +4,7 @@ from classifier import Classifier, ClassifierFactory, KoalaTextModerationLabel
 from contextlib import asynccontextmanager
 from typing import *
 import logging
+from model import ClassificationRequest
 
 import os
 import yaml
@@ -54,10 +55,10 @@ def healthcheck(status_code=200):
     return 200
 
 
-@content_moderator.get("/classify", status_code=200)
+@content_moderator.post("/classify", status_code=200)
 @method_counter
-def classify(message: str, response: Response) -> list[KoalaTextModerationLabel]:
-    classification: List[KoalaTextModerationLabel] = classifier.classify(message)
+def classify(classification_request: ClassificationRequest, response: Response) -> list[KoalaTextModerationLabel]:
+    classification: List[KoalaTextModerationLabel] = classifier.classify(classification_request.text)
     if not classification:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
