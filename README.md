@@ -213,6 +213,7 @@ can aggregate these labels or keep the most significant ones. This can be achiev
 - Constrain the length of messages that can be sent for classification. Larger messages could be a chance for monetization.
 - Implement an actual metrics reporter. Currently, we are just printing the metrics to stdout. These metrics should be 
 persisted somewhere (e.g. time-series database) in order to be displayed and provide concrete insights
+- Enable `async` execution on all endpoints
 
 ### Tech spec sign off 
 The tech spec containing the detailed solution design should be signed off by the corresponding team and
