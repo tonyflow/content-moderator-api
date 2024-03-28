@@ -214,6 +214,7 @@ can aggregate these labels or keep the most significant ones. This can be achiev
 - Implement an actual metrics reporter. Currently, we are just printing the metrics to stdout. These metrics should be 
 persisted somewhere (e.g. time-series database) in order to be displayed and provide concrete insights
 - Enable `async` execution on all endpoints
+- Configure logging level on the YAML application configuration file and avoid having it hardcoded in the `router.py`
 
 ### Tech spec sign off 
 The tech spec containing the detailed solution design should be signed off by the corresponding team and
